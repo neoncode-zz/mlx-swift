@@ -201,6 +201,14 @@ let noCudaCmlxExcludes = [
         .define("_METAL_"),
         .define("SWIFTPM_BUNDLE", to: "\"mlx-swift_Cmlx\""),
         .define("METAL_PATH", to: "\"default.metallib\""),
+
+        // Intel Macs run MLX on the CPU backend, and SwiftPM compiles C++ for the
+        // x86-64 baseline (SSE2): no per-lane variable shifts, no FMA, so the 4-bit
+        // unpacking in the quantized matmul — the hot loop of every LLM token — ran
+        // scalar. Every Intel Mac that runs the macOS 15 deployment target (2018+
+        // models) is Haswell-class or newer (AVX2, FMA, F16C, BMI2). `-Xarch_x86_64`
+        // scopes the flag to x86_64 compiles; arm64 compiles never see it.
+        .unsafeFlags(["-Xarch_x86_64", "-march=haswell"]),
     ]
 
     let linkerSettings: [LinkerSetting] = [
